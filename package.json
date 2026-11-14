@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "api": "node server/index.js",
-    "test": "node --test server/api.test.js"
-  },
+"dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview",
+  "api": "node --experimental-sqlite server/index.js",
+  "test": "node --experimental-sqlite --test server/api.test.js"  
+},
   "keywords": [],
   "type": "module",
   "dependencies": {
@@ -20,6 +20,6 @@
   },
   "private": true,
   "engines": {
-    "node": ">=24"
+    "node": ">=22"
   }
 }

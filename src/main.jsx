@@ -4,8 +4,15 @@ import { articles, demoID, demoCode, dailyQuote, formatSlot, modes, moods } from
 import './style.css'
 import { api } from './api.js'
 import { Grounding, QuietPause, MemoryMatch, WordScramble } from './activities.jsx'
+import {LuHouse, LuWind, LuPuzzle, LuMessageCircle, LuBookOpen, LuUserRound, LuCalendarDays, LuShieldCheck, LuPhone, LuBookmark, LuChevronRight, LuLock, LuInfo} from 'react-icons/lu'
 
-const nav = ['Home', 'Calm', 'Play', 'Talk']
+const nav = ['Home', 'Talk', 'Read', 'You']
+const navIcons = [
+  <LuHouse aria-hidden="true" />,
+  <LuMessageCircle aria-hidden="true" />,
+  <LuBookOpen aria-hidden="true" />,
+  <LuUserRound aria-hidden="true" />,
+]
 function readPreference(key) {
   try { return localStorage.getItem(key) } catch { return null }
 }
@@ -13,57 +20,266 @@ function savePreference(key, value) {
   try { localStorage.setItem(key, value) } catch { /* The current session still works. */ }
 }
 
+
 function Access({ onEnter }) {
   const [action, setAction] = useState('signup')
   const [step, setStep] = useState('id')
+
   const [id, setID] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [major, setMajor] = useState('')
+  const [academicYear, setAcademicYear] = useState('')
+
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
   function changeAction(next) {
     setAction(next)
     setStep('id')
     setCode('')
     setError('')
   }
-  const [busy, setBusy] = useState(false)
-  async function submit(event) {
+
+  function submit(event) {
     event.preventDefault()
+    setError('')
+
     if (step === 'id') {
-      if (![demoID, 'BU-DEMO-002'].includes(id.trim().toUpperCase())) return setError('Enter the sample college ID shown below.')
-      setStep('code')
-      setError('')
+      const normalizedID = id.trim().toUpperCase()
+
+      if (!/^[A-Z0-9][A-Z0-9-]{2,39}$/.test(normalizedID)) {
+        setError('Enter a valid college ID.')
+        return
+      }
+
+      setID(normalizedID)
+      setStep(action === 'signup' ? 'profile' : 'code')
       return
     }
-    setBusy(true)
-    try {
-      const student = await api('/auth/verify', 'POST', { collegeId: id, code: code.trim(), action })
-      onEnter(student)
-    } catch (err) { setError(err.message) }
-    finally { setBusy(false) }
+
+    if (step === 'profile') {
+      if (fullName.trim().length < 2) {
+        setError('Enter your full name.')
+        return
+      }
+
+      if (major.trim().length < 2) {
+        setError('Enter your course or programme.')
+        return
+      }
+
+      if (!academicYear) {
+        setError('Select your academic year.')
+        return
+      }
+
+      setStep('code')
+      return
+    }
+
+    verifyAccount()
   }
-  return <section className="card access">
-    <img className="access-logo" src={import.meta.env.BASE_URL + 'brand.png'} alt="" />
-    <h1>A calm space for every Bennett student.</h1>
-    <p>Sign up with your college ID to explore the BenSpace demo.</p>
-    <div className="choices" aria-label="Account action">
-      <button aria-pressed={action === 'signup'} onClick={() => changeAction('signup')}>Sign up</button>
-      <button aria-pressed={action === 'signin'} onClick={() => changeAction('signin')}>Sign in</button>
-    </div>
-    <form onSubmit={submit} noValidate>
-      {step === 'id' ? <>
-        <label htmlFor="college-id">College ID</label>
-        <input id="college-id" value={id} onChange={e => {setID(e.target.value); setError('')}} autoComplete="off" maxLength={40} aria-describedby="demo-tip" />
-        <p id="demo-tip">Sample college IDs <strong>{demoID}</strong> and <strong>BU-DEMO-002</strong>. Use the sample for this demo.</p>
-      </> : <>
-        <label htmlFor="code">Verification code</label>
-        <input id="code" value={code} onChange={e => {setCode(e.target.value); setError('')}} inputMode="numeric" maxLength={6} autoComplete="off" aria-describedby="demo-tip" />
-        <p id="demo-tip">Sample code <strong>{demoCode}</strong>. This screen simulates verification.</p>
-        <button type="button" className="quiet" onClick={() => changeAction(action)}>Change college ID</button>
-      </>}
-      {error && <p role="alert" className="error">{error}</p>}
-      <button className="primary" type="submit" disabled={busy}>{step === 'id' ? 'Continue' : action === 'signup' ? 'Create demo account' : 'Enter BenSpace'}</button>
-    </form>
-  </section>
+
+  async function verifyAccount() {
+    setBusy(true)
+
+    try {
+      const payload = {
+        collegeId: id,
+        code: code.trim(),
+        action,
+        ...(action === 'signup'
+          ? {
+              fullName: fullName.trim(),
+              major: major.trim(),
+              academicYear
+            }
+          : {})
+      }
+
+      const student = await api('/auth/verify', 'POST', payload)
+      onEnter(student)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card access">
+      <img
+        className="access-logo"
+        src={import.meta.env.BASE_URL + 'brand.png'}
+        alt=""
+      />
+
+      <h1>A calm space for every Bennett student.</h1>
+      <p>Sign up with your college ID to explore the BenSpace demo.</p>
+
+      <div className="choices" aria-label="Account action">
+        <button
+          type="button"
+          aria-pressed={action === 'signup'}
+          onClick={() => changeAction('signup')}
+        >
+          Sign up
+        </button>
+
+        <button
+          type="button"
+          aria-pressed={action === 'signin'}
+          onClick={() => changeAction('signin')}
+        >
+          Sign in
+        </button>
+      </div>
+
+      <form onSubmit={submit} noValidate>
+        {step === 'id' && (
+          <>
+            <label htmlFor="college-id">College ID</label>
+            <input
+              id="college-id"
+              value={id}
+              onChange={e => {
+                setID(e.target.value)
+                setError('')
+              }}
+              autoComplete="off"
+              maxLength={40}
+              required
+            />
+
+            <p id="demo-tip">
+              Existing demo accounts:
+              {' '}
+              <strong>{demoID}</strong>
+              {' '}and{' '}
+              <strong>BU-DEMO-002</strong>.
+              {' '}
+              You can also create a new demo account.
+            </p>
+          </>
+        )}
+
+        {step === 'profile' && (
+          <>
+            <p>Let's set up your student profile.</p>
+
+            <label htmlFor="full-name">Full name</label>
+            <input
+              id="full-name"
+              value={fullName}
+              onChange={e => {
+                setFullName(e.target.value)
+                setError('')
+              }}
+              placeholder="e.g. Aarav Rao"
+              autoComplete="name"
+              maxLength={80}
+              required
+            />
+
+            <label htmlFor="major">Course / Programme</label>
+            <input
+              id="major"
+              value={major}
+              onChange={e => {
+                setMajor(e.target.value)
+                setError('')
+              }}
+              placeholder="e.g. B.Tech CSE"
+              maxLength={80}
+              required
+            />
+
+            <label htmlFor="academic-year">Academic year</label>
+            <select
+              id="academic-year"
+              value={academicYear}
+              onChange={e => {
+                setAcademicYear(e.target.value)
+                setError('')
+              }}
+              required
+            >
+              <option value="">Select your year</option>
+              <option value="1st year">1st year</option>
+              <option value="2nd year">2nd year</option>
+              <option value="3rd year">3rd year</option>
+              <option value="4th year">4th year</option>
+              <option value="5th year">5th year</option>
+            </select>
+
+            <button
+              type="button"
+              className="quiet"
+              onClick={() => {
+                setStep('id')
+                setError('')
+              }}
+            >
+              Back to college ID
+            </button>
+          </>
+        )}
+
+        {step === 'code' && (
+          <>
+            <label htmlFor="code">Demo verification code</label>
+            <input
+              id="code"
+              value={code}
+              onChange={e => {
+                setCode(e.target.value)
+                setError('')
+              }}
+              inputMode="numeric"
+              maxLength={6}
+              autoComplete="off"
+              required
+            />
+
+            <p id="demo-tip">
+              Sample code <strong>{demoCode}</strong>.
+              This screen simulates verification for the demo.
+            </p>
+
+            <button
+              type="button"
+              className="quiet"
+              onClick={() => {
+                setStep(action === 'signup' ? 'profile' : 'id')
+                setError('')
+              }}
+            >
+              Go back
+            </button>
+          </>
+        )}
+
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+
+        <button className="primary" type="submit" disabled={busy}>
+          {busy
+            ? 'Please wait...'
+            : step === 'id'
+              ? 'Continue'
+              : step === 'profile'
+                ? 'Continue to verification'
+                : action === 'signup'
+                  ? 'Create demo account'
+                  : 'Enter BenSpace'}
+        </button>
+      </form>
+    </section>
+  )
 }
 
 function Breath() {
@@ -147,6 +363,8 @@ function App() {
   const [focusFilter, setFocusFilter] = useState('')
   const [apiError, setApiError] = useState('')
   const [active, setActive] = useState(false)
+  const [student, setStudent] = useState(null)
+  const [savedArticles, setSavedArticles] = useState([])
   const [screen, setScreen] = useState('Access')
   const [previous, setPrevious] = useState('Access')
   const [light, setLight] = useState(() => readPreference('benspace-theme') === 'light')
@@ -186,11 +404,23 @@ function App() {
     setSlots(directoryData.slots)
     setBookings(appointments)
   }
-  async function enter() {
-    setActive(true)
-    go('Home')
-    try {await refresh();setApiError('')} catch (err) {setApiError(err.message)}
+
+async function enter(profile) {
+  setActive(true)
+  go('Home')
+
+  try {
+    const currentProfile =
+      profile?.fullName !== undefined ? profile : await api('/me')
+
+    setStudent(currentProfile)
+    await refresh()
+    setApiError('')
+  } catch (err) {
+    setApiError(err.message)
   }
+}
+
   useEffect(() => {
     api('/me').then(enter).catch(err => {if (err.status !== 401) setApiError(err.message)})
   }, [])
@@ -221,6 +451,8 @@ function App() {
     catch (err) {setApiError(err.message);return}
     setApiError('')
     setActive(false)
+    setStudent(null)
+    setSavedArticles([])
     setMood(null)
     setBookings([])
     setProvider(null)
@@ -231,7 +463,13 @@ function App() {
   }
   const upcoming = bookings.filter(b => Date.parse(b.startsAt) > Date.now()).sort((a,b) => a.startsAt.localeCompare(b.startsAt))
   const nameOf = b => providers.find(p => p.id === b.providerId)?.name ?? 'Sample provider'
-  const section = ['Profile','Confirmed','Sessions'].includes(screen) ? 'Talk' : ['Breathe','Grounding','Quiet'].includes(screen) ? 'Calm' : ['Memory','Words'].includes(screen) ? 'Play' : screen
+  const section =
+  ['Profile', 'Confirmed', 'Sessions'].includes(screen) ? 'Talk'
+  : ['SavedReads', 'Privacy'].includes(screen) ? 'You'
+  : ['Breathe', 'Grounding', 'Quiet'].includes(screen) ? 'Home'
+  : ['Memory', 'Words'].includes(screen) ? 'Home'
+  : screen === 'Article' ? articleBack === 'SavedReads' ? 'You' : articleBack : screen
+
   const articleList = (items, from) => <div className="article-grid">{items.map(item => <button className="card read-card" key={item.title} onClick={() => openArticle(item, from)}><span className="badge">{item.topic} · 1 min</span><strong>{item.title}</strong><span>{item.summary}</span></button>)}</div>
   return <div className={light ? 'shell light' : 'shell'}>
     <header><div className="bar">
@@ -243,16 +481,159 @@ function App() {
       <p className="demo-banner">BenSpace demo · Use sample details only{active && <button className="quiet" onClick={signOut}>Sign out</button>}</p>
       {apiError && <p role="alert">{apiError}</p>}
       {screen === 'Access' && <Access onEnter={enter} />}
+
+{screen === 'You' && (
+  <>
+    <section className="card you-profile">
+      <div className="profile-avatar">
+        {(student?.fullName || 'Student')
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(part => part[0].toUpperCase())
+          .join('')}
+      </div>
+
+      <h1>{student?.fullName || 'Student profile'}</h1>
+
+      <p>
+        {[student?.major, student?.academicYear]
+          .filter(Boolean)
+          .join(' · ') || 'Complete your demo profile'}
+      </p>
+
+      {student?.collegeId && (
+        <small>College ID · {student.collegeId}</small>
+      )}
+    </section>
+
+    <section className="card you-group">
+      <h2>Your Support</h2>
+
+      <button className="you-row" onClick={() => go('Sessions')}>
+        <span className="you-row-icon"><LuCalendarDays /></span>
+        <span className="you-row-content">
+          <strong>Sessions</strong>
+          <small>
+            {upcoming.length === 1
+              ? 'One upcoming session'
+              : `${upcoming.length} upcoming sessions`}
+          </small>
+        </span>
+        <LuChevronRight />
+      </button>
+
+      <button className="you-row" onClick={() => go('SavedReads')}>
+        <span className="you-row-icon"><LuBookOpen /></span>
+        <span className="you-row-content">
+          <strong>Saved reads</strong>
+          <small>
+            {savedArticles.length
+              ? `${savedArticles.length} saved articles`
+              : 'Your wellbeing library'}
+          </small>
+        </span>
+        <LuChevronRight />
+      </button>
+    </section>
+
+    <section className="card you-group">
+      <h2>Privacy &amp; Safety</h2>
+
+      <button className="you-row" onClick={() => go('Privacy')}>
+        <span className="you-row-icon"><LuShieldCheck /></span>
+        <span className="you-row-content">
+          <strong>Privacy controls</strong>
+          <small>How BenSpace protects you</small>
+        </span>
+        <LuChevronRight />
+      </button>
+
+      <button className="you-row" onClick={() => go('Urgent')}>
+        <span className="you-row-icon"><LuPhone /></span>
+        <span className="you-row-content">
+          <strong>Urgent support</strong>
+          <small>Help is always available</small>
+        </span>
+        <LuChevronRight />
+      </button>
+    </section>
+
+    <button className="you-signout" onClick={signOut}>
+      Sign out
+    </button>
+
+    <p className="you-footer">
+      BenSpace prototype · Version 1.0
+    </p>
+  </>
+)}
+
       {screen === 'Home' && <>
-        <h1>How are you today?</h1>
-        <section className="card"><h2>Check in with yourself</h2>
-          <div className="moods">{moods.map(item => <button key={item[0]} aria-pressed={mood?.[0] === item[0]} onClick={() => setMood(item)}><i aria-hidden="true" style={{background: item[1]}} />{item[0]}</button>)}</div>
+  <div className="home-intro">
+    <span className="home-eyebrow">YOUR SPACE, YOUR PACE</span>
+    <h1>How are you arriving today?</h1>
+    <p>A moment to check in, take a breath, and find what you need.</p>
+  </div>
+<section className="card mood-card">
+  <h2>Check in with yourself</h2>
+  <div className="moods">
+    {moods.map(item => {
+  const faces = {
+    Rough: '╯︵╰',
+    Low: '−︵−',
+    Okay: '−‿−',
+    Good: '◡‿◡',
+    Great: '⌒‿⌒',
+  }
+
+  return (
+    <button
+      key={item[0]}
+      className="mood-button"
+      aria-pressed={mood?.[0] === item[0]}
+      onClick={() => setMood(item)}
+    >
+      <span
+        className="mood-face"
+        aria-hidden="true"
+        style={{ '--mood-color': item[1] }}
+      >
+        {faces[item[0]]}
+      </span>
+      <span className="mood-label">{item[0]}</span>
+    </button>
+
+  )
+})}
+  </div>
+  <div className="home-extra-links">
+  <button onClick={() => go('Calm')}>Explore Calm</button>
+  <button onClick={() => go('Play')}>Play a wellbeing game</button>
+</div>
           {mood && <div className="mood-response"><p role="status">{mood[2]}</p><button className="primary" onClick={() => {if (mood[3] === 'Talk') setDirectory('Counsellors'); go(mood[3])}}>{mood[4]}</button>{mood[0] === 'Low' && <button onClick={() => {setDirectory('Peer mentors');go('Talk')}}>Talk to a peer mentor</button>}</div>}
         </section>
-        <section className="card"><h2>Today’s quote</h2><p role="status">“{dailyQuote(mood?.[0], quoteTime)}”</p></section>
-        <div className="shortcuts"><button className="card talk" onClick={() => go('Talk')}><span aria-hidden="true">◌</span><strong>Talk to someone</strong><small>Counsellors and mentors</small></button><button className="card lavender" onClick={() => go('Breathe')}><span aria-hidden="true">≈</span><strong>Two-minute breath</strong><small>Slow down, gently</small></button></div>
-        <section className="card"><h2>Peer support</h2><p>Connect with a fellow student who understands campus life.</p><button onClick={() => {setDirectory('Peer mentors');go('Talk')}}>Find a peer mentor</button></section>
-        <section className="card"><h2>Your next session</h2>{upcoming[0] ? <><p>{nameOf(upcoming[0])} · {upcoming[0].mode} · {formatSlot(upcoming[0].startsAt)}</p><button onClick={() => go('Sessions')}>Manage sessions</button></> : <p>Nothing booked yet.</p>}</section>
+        <section className="card quote-card"><h2>Today’s quote</h2><p role="status">“{dailyQuote(mood?.[0], quoteTime)}”</p></section>
+        <div className="shortcuts">
+  <button className="card talk" onClick={() => go('Talk')}>
+    <span className="shortcut-icon" aria-hidden="true">
+      <LuMessageCircle />
+    </span>
+    <strong>Talk to someone</strong>
+    <small>Counsellors and mentors</small>
+  </button>
+
+  <button className="card lavender" onClick={() => go('Breathe')}>
+    <span className="shortcut-icon" aria-hidden="true">
+      <LuWind />
+    </span>
+    <strong>Two-minute breath</strong>
+    <small>Slow down, gently</small>
+  </button>
+</div>
+        <section className="card support-card"><h2>Peer support</h2><p>Connect with a fellow student who understands campus life.</p><button onClick={() => {setDirectory('Peer mentors');go('Talk')}}>Find a peer mentor</button></section>
+        <section className="card session-card"><h2>Your next session</h2>{upcoming[0] ? <><p>{nameOf(upcoming[0])} · {upcoming[0].mode} · {formatSlot(upcoming[0].startsAt)}</p><button onClick={() => go('Sessions')}>Manage sessions</button></> : <p>Nothing booked yet.</p>}</section>
         <div className="row"><h2>For you today</h2><button className="quiet" onClick={() => {setTopic('All'); go('Read')}}>See all</button></div>{articleList(articles.slice(0,2), 'Home')}
       </>}
       {screen === 'Talk' && <><h1>Appointments</h1><p>Explore sample counsellor and mentor profiles.</p>
@@ -271,7 +652,24 @@ function App() {
       {screen === 'Confirmed' && <section className="card"><h1>You took a good step.</h1><p>Demo booking confirmed.</p><p>{nameOf(confirmation)} · {confirmation.mode} · {formatSlot(confirmation.startsAt)}</p><p>Real reminders and appointments require the university integration.</p><div className="choices"><button className="primary" onClick={() => go('Home')}>Go home</button><button onClick={() => go('Breathe')}>Take a breath</button></div></section>}
       {screen === 'Sessions' && <><h1>Your sessions</h1>{!upcoming.length && <p>There are no upcoming demo sessions.</p>}{upcoming.map(b => <section className="card" key={b.id}><h2>{nameOf(b)}</h2><p>{b.mode} · {formatSlot(b.startsAt)}</p><div className="choices">{cancelID === b.id ? <><button className="urgent" onClick={() => {cancelBooking(b.id)}}>Confirm cancellation</button><button onClick={() => setCancelID(null)}>Keep session</button></> : <><button onClick={() => {setCancelID(null); openProfile(providers.find(p => p.id === b.providerId),b)}}>Reschedule</button><button onClick={() => setCancelID(b.id)}>Cancel session</button></>}</div></section>)}</>}
       {screen === 'Read' && <><h1>Read and reflect</h1><p>Short reads for everyday student life.</p><div className="choices" aria-label="Article topics">{['All','Health','Movement','Motivation','Sleep','Stress','Connection'].map(value => <button key={value} aria-pressed={topic === value} onClick={() => setTopic(value)}>{value}</button>)}</div>{articleList(articles.filter(item => topic === 'All' || item.topic === topic), 'Read')}</>}
-      {screen === 'Article' && <><button className="quiet" onClick={() => go(articleBack)}>← {articleBack}</button><article className="card"><span className="badge">{article.topic} · 1 min</span><h1>{article.title}</h1><p>{article.summary}</p>{article.body.map(text => <p key={text}>{text}</p>)}<small>Sample article for demonstration.</small></article><button className="primary" onClick={() => go('Talk')}>Find someone to talk to</button></>}
+      {screen === 'Article' && <><button className="quiet" onClick={() => go(articleBack)}>← {articleBack}</button><article className="card"><span className="badge">{article.topic} · 1 min</span><h1>{article.title}</h1><p>{article.summary}</p>{article.body.map(text => <p key={text}>{text}</p>)}
+      <button
+  className="quiet"
+  aria-pressed={savedArticles.includes(article.title)}
+  onClick={() => {
+    setSavedArticles(current =>
+      current.includes(article.title)
+        ? current.filter(title => title !== article.title)
+        : [...current, article.title]
+    )
+  }}
+>
+  <LuBookmark />
+  {savedArticles.includes(article.title)
+    ? 'Remove from saved reads'
+    : 'Save this read'}
+</button>
+      <small>Sample article for demonstration.</small></article><button className="primary" onClick={() => go('Talk')}>Find someone to talk to</button></>}
       {screen === 'Calm' && <><h1>Calm</h1><div className="choices">{[['Breathe','Two-minute breathing'],['Grounding','Five senses grounding'],['Quiet','One-minute quiet pause']].map(([key,label]) => <button key={key} onClick={() => go(key)}>{label}</button>)}</div></>}
       {['Breathe','Grounding','Quiet'].includes(screen) && <button className="quiet" onClick={() => go('Calm')}>← Calm</button>}
       {screen === 'Breathe' && <Breath />}
@@ -288,8 +686,96 @@ function App() {
         <button onClick={() => go(active ? 'Breathe' : 'Guest breath')}>Open breathing exercise</button></>}
       {screen === 'Guest breath' && <><button className="quiet" onClick={() => go('Urgent')}>← Urgent help</button><Breath /></>}
     </main>
-    {active && <nav aria-label="Main navigation"><div>{nav.map((label,i) => <button key={label} aria-current={section === label ? 'page' : undefined} onClick={() => go(label)}><span aria-hidden="true">{['⌂','≈','◇','◌'][i]}</span>{label === 'Talk' ? 'Appointments' : label}</button>)}</div></nav>}
+  {active && (
+  <nav aria-label="Main navigation">
+    <div>
+      {nav.map((label, i) => (
+        <button
+          key={label}
+          aria-current={section === label ? 'page' : undefined}
+          onClick={() => go(label)}
+        >
+          <span className="nav-icon">{navIcons[i]}</span>
+          {label}
+        </button>
+      ))}
+    </div>
+  </nav>
+)}
   </div>
 }
+
+{screen === 'SavedReads' && (
+  <>
+    <button className="quiet" onClick={() => go('You')}>
+      ← Your profile
+    </button>
+
+    <h1>Saved reads</h1>
+    <p>Your personal wellbeing reading list.</p>
+
+    {savedArticles.length === 0 ? (
+      <section className="card">
+        <LuBookmark size={28} />
+        <h2>Your library is waiting</h2>
+        <p>
+          Save articles you would like to revisit.
+          They will appear here during this session.
+        </p>
+        <button className="primary" onClick={() => go('Read')}>
+          Explore reads
+        </button>
+      </section>
+    ) : (
+      articleList(
+        articles.filter(item => savedArticles.includes(item.title)),
+        'SavedReads'
+      )
+    )}
+  </>
+)}
+
+{screen === 'Privacy' && (
+  <>
+    <button className="quiet" onClick={() => go('You')}>
+      ← Your profile
+    </button>
+
+    <h1>Your privacy matters.</h1>
+    <p>
+      BenSpace is designed to provide a supportive space
+      while keeping your demo account information limited.
+    </p>
+
+    <section className="card">
+      <LuShieldCheck size={28} />
+      <h2>Account information</h2>
+      <p>
+        Your demo profile contains your college ID, name,
+        course and academic year.
+      </p>
+    </section>
+
+    <section className="card">
+      <LuLock size={28} />
+      <h2>Session security</h2>
+      <p>
+        The demo uses an HTTP-only session cookie and
+        expires sessions after eight hours.
+      </p>
+    </section>
+
+    <section className="card">
+      <LuInfo size={28} />
+      <h2>Prototype notice</h2>
+      <p>
+        This is a demonstration application, not a
+        university-operated confidential counselling
+        platform. Do not enter sensitive personal or
+        medical information.
+      </p>
+    </section>
+  </>
+)}
 
 createRoot(document.getElementById('root')).render(<App />)

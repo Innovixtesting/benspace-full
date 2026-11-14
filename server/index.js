@@ -2,12 +2,20 @@ import { createServer } from 'node:http'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
-import { pathToFileURL } from 'node:url'
-import { demoSlots, providers, modes, demoCode, demoID } from '../src/data.js'
-
-const sampleIDs = new Set([demoID, 'BU-DEMO-002'])
+import { pathToFileURL, fileURLToPath } from 'node:url'
+import { demoSlots, providers, modes, demoCode } from '../src/data.js'
+import {dirname, resolve} from 'node:path'
+const projectRoot = fileURLToPath(new URL('../', import.meta.url))
 const hash = token => createHash('sha256').update(token).digest('hex')
-const allowedOrigins = new Set([5173,4173,3001].flatMap(port => ['localhost','127.0.0.1'].map(host => `http://${host}:${port}`)))
+const allowedOrigins = new Set([
+  ...[5173, 4173, 3001].flatMap(port =>
+    ['localhost', '127.0.0.1'].map(host => `http://${host}:${port}`)
+  ),
+  ...(process.env.FRONTEND_ORIGINS || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean)
+])
 const languages = {maya:'English, Hindi', aditi:'English, Hindi', riya:'English, Bengali', leela:'English, Tamil', arun:'English, Tamil'}
 const sessionCookie = (value, age) => `benspace_session=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}`
 
@@ -27,11 +35,30 @@ async function jsonBody(req) {
   } catch { throw Object.assign(new Error('Enter a valid request.'),{status:400}) }
 }
 
-export function createApi(path = 'var/benspace.sqlite') {
-  if (path === 'var/benspace.sqlite') mkdirSync('var',{recursive:true})
-  const db = new DatabaseSync(path)
+export function createApi(databasePath = process.env.DB_PATH || resolve(projectRoot, 'var', 'benspace.sqlite')) {
+  const resolvedDatabasePath = databasePath === ':memory:'
+    ? databasePath
+    : resolve(databasePath)
+
+  if (resolvedDatabasePath !== ':memory:') {
+    mkdirSync(dirname(resolvedDatabasePath), { recursive: true })
+  }
+
+  const db = new DatabaseSync(resolvedDatabasePath)
   db.exec(readFileSync(new URL('./schema.sql', import.meta.url),'utf8'))
   const sql = (query, operation, ...params) => db.prepare(query)[operation](...params)
+  const studentColumns = sql('PRAGMA table_info(students)', 'all')
+const existingColumns = new Set(studentColumns.map(column => column.name))
+
+if (!existingColumns.has('full_name')) {
+  db.exec("ALTER TABLE students ADD COLUMN full_name TEXT NOT NULL DEFAULT ''")
+}
+if (!existingColumns.has('major')) {
+  db.exec("ALTER TABLE students ADD COLUMN major TEXT NOT NULL DEFAULT ''")
+}
+if (!existingColumns.has('academic_year')) {
+  db.exec("ALTER TABLE students ADD COLUMN academic_year TEXT NOT NULL DEFAULT ''")
+}
   for (const p of providers) {
     sql('INSERT OR IGNORE INTO providers VALUES (?,?,?,?,?,?)','run',p.id,p.name,p.role,p.focus,p.bio,languages[p.id])
   }
@@ -56,19 +83,85 @@ export function createApi(path = 'var/benspace.sqlite') {
       const student = token && sql('SELECT college_id FROM sessions WHERE token_hash=? AND expires_at>?','get',hash(token),Date.now())?.college_id
       if (route === '/api/health' && method === 'GET') return send(200,{ok:true})
       if (route === '/api/auth/verify' && method === 'POST') {
-        const {collegeId, code, action} = await jsonBody(req)
-        const id = typeof collegeId === 'string' ? collegeId.trim().toUpperCase() : ''
-        if (!sampleIDs.has(id) || code !== demoCode || !['signup','signin'].includes(action)) return fail(400,'Check the sample college ID and verification code.')
-        const exists = sql('SELECT 1 FROM students WHERE college_id=?','get',id)
-        if (action === 'signup' && exists) return fail(409,'This sample ID is registered. Choose Sign in.')
-        if (action === 'signin' && !exists) return fail(404,'Create a demo account first using Sign up.')
-        if (action === 'signup') sql('INSERT INTO students(college_id) VALUES (?)','run',id)
-        if (token) sql('DELETE FROM sessions WHERE token_hash=?','run',hash(token))
-        sql('DELETE FROM sessions WHERE expires_at<=?','run',Date.now())
-        const next = randomBytes(32).toString('hex')
-        sql('INSERT INTO sessions VALUES (?,?,?)','run',hash(next),id,Date.now()+28800000)
-        res.setHeader('Set-Cookie',sessionCookie(next,28800))
-        return send(200,{collegeId:id})
+          const { collegeId, code, action, fullName, major, academicYear } = await jsonBody(req)
+
+  const id = typeof collegeId === 'string'
+    ? collegeId.trim().toUpperCase()
+    : ''
+
+  if (!['signup', 'signin'].includes(action)) {
+    return fail(400, 'Choose Sign up or Sign in.')
+  }
+
+  if (!/^[A-Z0-9][A-Z0-9-]{2,39}$/.test(id)) {
+    return fail(400, 'Enter a valid college ID.')
+  }
+
+  if (code !== demoCode) {
+    return fail(400, 'Check the demo verification code.')
+  }
+
+  const exists = sql(
+    'SELECT 1 FROM students WHERE college_id=?',
+    'get',
+    id
+  )
+
+  if (action === 'signup') {
+    const name = typeof fullName === 'string' ? fullName.trim() : ''
+    const course = typeof major === 'string' ? major.trim() : ''
+    const year = typeof academicYear === 'string' ? academicYear.trim() : ''
+
+    if (name.length < 2 || name.length > 80) {
+      return fail(422, 'Enter your full name (2–80 characters).')
+    }
+
+    if (course.length < 2 || course.length > 80) {
+      return fail(422, 'Enter your course or programme.')
+    }
+
+    if (year.length < 2 || year.length > 40) {
+      return fail(422, 'Enter your academic year.')
+    }
+
+    if (exists) {
+      return fail(409, 'This college ID is already registered. Choose Sign in.')
+    }
+
+    sql(
+      `INSERT INTO students(college_id, full_name, major, academic_year)
+       VALUES (?, ?, ?, ?)`,
+      'run',
+      id,
+      name,
+      course,
+      year
+    )
+  }
+
+  if (action === 'signin' && !exists) {
+    return fail(404, 'No account found. Choose Sign up to create a demo account.')
+  }
+
+  if (token) {
+    sql('DELETE FROM sessions WHERE token_hash=?', 'run', hash(token))
+  }
+
+  sql('DELETE FROM sessions WHERE expires_at<=?', 'run', Date.now())
+
+  const next = randomBytes(32).toString('hex')
+
+  sql(
+    'INSERT INTO sessions VALUES (?,?,?)',
+    'run',
+    hash(next),
+    id,
+    Date.now() + 28800000
+  )
+
+  res.setHeader('Set-Cookie', sessionCookie(next, 28800))
+  return send(200, { collegeId: id })
+
       }
       if (route === '/api/auth/logout' && method === 'POST') {
         if (token) sql('DELETE FROM sessions WHERE token_hash=?','run',hash(token))
@@ -76,7 +169,21 @@ export function createApi(path = 'var/benspace.sqlite') {
         return send(200,{ok:true})
       }
       if (!student) return fail(401,'Sign in to continue.')
-      if (route === '/api/me' && method === 'GET') return send(200,{collegeId:student})
+      if (route === '/api/me' && method === 'GET') {
+  const profile = sql(
+    `SELECT
+       college_id AS collegeId,
+       full_name AS fullName,
+       major,
+       academic_year AS academicYear
+     FROM students
+     WHERE college_id=?`,
+    'get',
+    student
+  )
+
+  return send(200, profile)
+}
       if (route === '/api/directory' && method === 'GET') {
         seedSlots()
         return send(200,{
@@ -126,5 +233,9 @@ export function createApi(path = 'var/benspace.sqlite') {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  createApi().listen(3001,'127.0.0.1',()=>console.log('BenSpace demo API at http://127.0.0.1:3001'))
+  const port = Number(process.env.PORT || 3001)
+
+  createApi().listen(port, '0.0.0.0', () => {
+    console.log(`BenSpace API listening on port ${port}`)
+  })
 }

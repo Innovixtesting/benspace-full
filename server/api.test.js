@@ -12,7 +12,19 @@ test('two accounts can book, reschedule and cancel without accessing each otherâ
     method, headers:{...(body ? {'Content-Type':'application/json'} : {}), ...(cookie ? {Cookie:cookie} : {})},
     body:body && JSON.stringify(body),
   })
-  const verify = (collegeId, action='signup', code='246810') => request('/auth/verify','POST',{collegeId,action,code})
+  const verify = (collegeId, action = 'signup', code = '246810') =>
+  request('/auth/verify', 'POST', {
+    collegeId,
+    action,
+    code,
+    ...(action === 'signup'
+      ? {
+          fullName: 'Test Student',
+          major: 'Computer Science',
+          academicYear: 'Year 2',
+        }
+      : {}),
+  })
   try {
     assert.equal((await request('/bookings')).status,401)
     assert.equal((await verify('BU-DEMO-001','signup','000000')).status,400)

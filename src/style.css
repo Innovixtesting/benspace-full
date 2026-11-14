@@ -1,8 +1,65 @@
-:root{font-family:Nunito,system-ui,sans-serif;font-synthesis:none;background:#141c1f}
+:root {
+  font-family: "Nunito Sans", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 *{box-sizing:border-box}
 body{margin:0}
-.shell{--bg:#141c1f;--surface:#1f2a2e;--border:#39494d;--text:#eef5f1;--muted:#aec0bd;--mint:#a4d4c3;--lav:#c9bff0;--lav-bg:#2c2940;--talk:#22363b;--peach:#ffd0bf;--peach-bg:#3b2c28;--button-text:#152a26;min-height:100dvh;background:var(--bg);color:var(--text);color-scheme:dark}
-.shell.light{--bg:#eff4f8;--surface:#fff;--border:#b5c5cd;--text:#1b3444;--muted:#456070;--mint:#2f5d7c;--lav:#554879;--lav-bg:#e6e3f3;--talk:#dce9f2;--peach:#853e30;--peach-bg:#fae4dd;--button-text:white;color-scheme:light}
+
+/* =========================================
+   BenSpace — Core colour system
+   ========================================= */
+
+/* Default: Night Garden */
+.shell {
+  --bg: #171d19;
+  --surface: #232c26;
+  --border: #3c4940;
+
+  --text: #f1f3eb;
+  --muted: #bdc7bb;
+
+  --mint: #b5d0b3;
+  --lav: #d0c2e8;
+  --lav-bg: #393246;
+
+  --talk: #2d3c32;
+
+  --peach: #f1c3ad;
+  --peach-bg: #49352e;
+
+  --button-text: #202b22;
+
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  color-scheme: dark;
+}
+
+/* Light: Morning Meadow */
+.shell.light {
+  --bg: #f5f3ec;
+  --surface: #fffefa;
+  --border: #deded2;
+
+  --text: #29352d;
+  --muted: #647267;
+
+  --mint: #52745b;
+  --lav: #66557f;
+  --lav-bg: #eee9f5;
+
+  --talk: #e8efe5;
+
+  --peach: #92513d;
+  --peach-bg: #f8e8df;
+
+  --button-text: #ffffff;
+
+  color-scheme: light;
+}
 header,nav{background:var(--surface);border-color:var(--border);border-style:solid;border-width:0 0 1px;z-index:2}
 header{position:sticky;top:0}
 .bar,main,nav>div{max-width:840px;margin:auto;padding-inline:clamp(16px,4vw,34px)}
@@ -41,9 +98,67 @@ form>.primary{margin-top:10px}
 .option{display:flex;align-items:center;gap:6px}
 .option input{accent-color:var(--mint)}
 button[aria-pressed=true]{border-color:var(--mint);color:var(--mint);box-shadow:inset 0 0 0 1px var(--mint)}
-.moods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.moods button{font-size:clamp(.7rem,3vw,1rem);padding:8px 0;display:grid;place-items:center;gap:5px;min-height:64px}
-.moods i{width:13px;height:13px;border-radius:50%}
+.moods {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.mood-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 104px;
+  padding: 12px 4px;
+  border-radius: 18px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: background 180ms ease, border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.mood-button:hover {
+  border-color: var(--mint);
+  transform: translateY(-2px);
+}
+
+.mood-face {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--mood-color) 22%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--mood-color) 55%, transparent);
+  color: var(--mood-color);
+  font-family: "Nunito Sans", system-ui, sans-serif;
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+.mood-label {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.mood-button[aria-pressed="true"] .mood-face {
+  background: color-mix(in srgb, var(--mood-color) 35%, var(--surface));
+  border-color: var(--mood-color);
+  transform: scale(1.06);
+}
+
+
+.mood-button[aria-pressed="true"] .mood-face,
+.mood-button[aria-pressed="true"] .mood-label {
+  color: var(--mint);
+}
 .mood-response{margin-top:15px;border-top:1px solid var(--border);padding-top:12px}
 .shortcuts,.article-grid,.stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .shortcuts{margin-bottom:16px}
@@ -69,7 +184,18 @@ nav button[aria-current]{color:var(--mint);box-shadow:inset 0 2px var(--mint)}
 .breathing .choices{justify-content:center}
 .orbit{display:grid;place-items:center;height:240px}
 .bubble{background:radial-gradient(circle at 35% 28%,#e5ddff,#9a8ec8);width:136px;aspect-ratio:1;border-radius:50%;transform:scale(var(--scale));transition:transform .12s linear;box-shadow:0 0 50px #a495e34d}
-@media(max-width:560px){.article-grid,.stack{grid-template-columns:1fr}}
+@media(max-width:560px){
+    .article-grid,.stack
+    {
+        grid-template-columns:1fr
+    }
+   .mood-face {
+    width: 52px;
+    height: 52px;
+    font-size: 1.3rem;
+  }
+}
+
 @media(prefers-reduced-motion:reduce){.bubble{transition:none;transform:none}}
 .game-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:15px}
 .game-grid button{min-height:64px}
@@ -92,8 +218,28 @@ body {
 }
 
 .shell {
-  width: 100%;
-  overflow-x: clip;
+  --bg: #171d19;
+  --surface: #232c26;
+  --border: #3c4940;
+
+  --text: #f1f3eb;
+  --muted: #bdc7bb;
+
+  --mint: #b5d0b3;
+  --lav: #d0c2e8;
+  --lav-bg: #393246;
+
+  --talk: #2d3c32;
+
+  --peach: #f1c3ad;
+  --peach-bg: #49352e;
+
+  --button-text: #202b22;
+
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  color-scheme: dark;
 }
 
 header {
@@ -271,16 +417,23 @@ nav button {
   }
 
   .moods {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-  }
+  gap: 5px;
+}
 
-  .moods button {
-    min-width: 0;
-    min-height: 60px;
-    padding-inline: 2px;
-    overflow-wrap: anywhere;
-  }
+.mood-button {
+  min-height: 88px;
+  padding: 9px 2px;
+  gap: 7px;
+  border-radius: 14px;
+}
+
+.mood-face {
+  font-size: clamp(1.25rem, 5vw, 1.65rem);
+}
+
+.mood-label {
+  font-size: 0.76rem;
+}
 
   .game-grid {
     gap: 7px;
@@ -322,7 +475,18 @@ nav button {
   nav > div {
     padding-inline: 11px;
   }
+  .moods {
+  gap: 3px;
+}
 
+.mood-button {
+  min-height: 80px;
+  padding-inline: 1px;
+}
+
+.mood-label {
+  font-size: 0.69rem;
+}
   .brand {
     font-size: 0.98rem;
   }
@@ -360,4 +524,329 @@ nav button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* =========================================
+   BenSpace — Typography and visual polish
+   ========================================= */
+
+/* Main heading */
+h1 {
+  font-family: "Lexend Exa", "Nunito Sans", sans-serif;
+  font-size: clamp(1.65rem, 4.5vw, 2.35rem);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.045em;
+}
+
+/* Supporting headings */
+h2 {
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+/* Body readability */
+p {
+  font-size: 0.98rem;
+  line-height: 1.7;
+}
+
+/* Brand identity */
+.brand strong {
+  font-family: "Lexend Exa", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+/* Softer surfaces */
+.card {
+  border-radius: 22px;
+  box-shadow: 0 5px 22px rgba(0, 0, 0, 0.045);
+}
+
+/* More consistent button shape */
+button,
+.button {
+  border-radius: 14px;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+/* Gentle hover feedback */
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+/* Keep the main content comfortable to read */
+article p {
+  max-width: 63ch;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .button {
+    transition: none;
+  }
+
+  button:not(:disabled):hover {
+    transform: none;
+  }
+}
+
+
+/* =========================================
+   BenSpace — Home dashboard refinement
+   ========================================= */
+
+.home-intro {
+  padding: 24px 2px 20px;
+  margin-bottom: 8px;
+}
+
+.home-eyebrow {
+  display: inline-block;
+  margin-bottom: 13px;
+  color: var(--mint);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.home-intro h1 {
+  max-width: 650px;
+  margin-bottom: 10px;
+}
+
+.home-intro p {
+  max-width: 48ch;
+  margin-bottom: 0;
+  font-size: 1rem;
+}
+
+/* Mood check-in is the primary Home interaction */
+.mood-card {
+  padding: clamp(20px, 4vw, 28px);
+  border-color: var(--mint);
+  border-color: color-mix(in srgb, var(--mint) 35%, var(--border));
+}
+
+.mood-card h2 {
+  margin-bottom: 4px;
+}
+
+/* Daily reflection */
+.quote-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.quote-card h2 {
+  color: var(--lav);
+}
+
+.quote-card p {
+  font-size: 1.04rem;
+  line-height: 1.8;
+}
+
+/* Support and appointment cards */
+.support-card,
+.session-card {
+  min-height: 150px;
+}
+
+.support-card h2,
+.session-card h2 {
+  margin-bottom: 10px;
+}
+
+/* Shortcut cards */
+.shortcuts {
+  gap: 14px;
+}
+
+.shortcuts button {
+  min-height: 145px;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+.shortcuts button strong {
+  line-height: 1.35;
+}
+
+.shortcuts button small {
+  line-height: 1.5;
+}
+
+/* Reading section */
+.row {
+  margin-top: 26px;
+  margin-bottom: 12px;
+}
+
+.read-card {
+  min-height: 145px;
+  padding: 20px;
+  border-radius: 18px;
+}
+
+/* Smaller screens */
+@media (max-width: 560px) {
+  .home-intro {
+    padding-top: 17px;
+    padding-bottom: 16px;
+  }
+
+  .home-intro h1 {
+    max-width: 100%;
+  }
+
+  .mood-card {
+    padding: 17px;
+  }
+
+  .shortcuts button {
+    min-height: 112px;
+    padding: 17px;
+  }
+
+  .support-card,
+  .session-card {
+    min-height: auto;
+  }
+
+  .row {
+    margin-top: 20px;
+  }
+}
+
+/* You profile */
+
+.you-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 20px;
+}
+
+.profile-avatar {
+  width: 88px;
+  height: 88px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6e8e4;
+  color: #35443a;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.you-profile h1 {
+  margin: 4px 0;
+}
+
+.you-profile p {
+  margin: 4px 0;
+  color: var(--muted);
+}
+
+.you-profile small {
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.you-group {
+  padding: 20px;
+}
+
+.you-group h2 {
+  margin: 0 0 12px;
+}
+
+.you-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 2px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.you-row-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.you-row-content small {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.you-row-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--mint) 18%, var(--surface));
+  color: var(--mint);
+  font-size: 1.2rem;
+}
+
+.you-row > svg:last-child {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.you-row:hover {
+  background: color-mix(in srgb, var(--mint) 7%, transparent);
+}
+
+.you-signout {
+  display: block;
+  margin: 24px auto 12px;
+  padding: 12px 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.you-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 12px 0 28px;
+}
+
+.home-extra-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.home-extra-links button {
+  flex: 1;
+  min-width: 130px;
 }

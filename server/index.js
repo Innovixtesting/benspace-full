@@ -147,7 +147,20 @@ export async function createApi(database = createDatabase()) {
     return send(503, { ok: false, database: 'unavailable' })
   }
 }
+if (route === '/api/stats' && method === 'GET') {
+  try {
+    const result = await one(
+      'SELECT COUNT(*)::int AS "totalUsers" FROM students'
+    )
 
+    return send(200, {
+      totalUsers: result.totalUsers
+    })
+  } catch (error) {
+    console.error('Community stats error:', error)
+    return fail(503, 'Community statistics are temporarily unavailable.')
+  }
+}
       const token = /(?:^|;)benspace_session=([a-f0-9]{64})(?:;|$)/
         .exec(req.headers.cookie ?? '')?.[1]
 

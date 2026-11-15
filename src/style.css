@@ -850,3 +850,77 @@ article p {
   flex: 1;
   min-width: 130px;
 }
+.about-trigger {
+  font: inherit;
+  cursor: pointer;
+}
+
+.about-dialog {
+  width: min(90%, 480px);
+  max-height: 85vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.about-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+.about-details dt {
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.about-details dd {
+  margin: 0.25rem 0 0;
+}
+
+/* Community registration count */
+
+.community-stats {
+  margin-top: 26px;
+  padding-top: 19px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.community-stats-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.community-stats-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 15%, transparent);
+}
+
+.community-stats-number {
+  margin-top: 9px;
+  color: var(--text);
+  font-size: clamp(2rem, 6vw, 2.5rem);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+}
+
+.community-stats-caption {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}

@@ -5,6 +5,8 @@ import './style.css'
 import { api } from './api.js'
 import { Grounding, QuietPause, MemoryMatch, WordScramble } from './activities.jsx'
 import {LuHouse, LuWind, LuPuzzle, LuMessageCircle, LuBookOpen, LuUserRound, LuCalendarDays, LuShieldCheck, LuPhone, LuBookmark, LuChevronRight, LuLock, LuInfo} from 'react-icons/lu'
+import AboutBenSpace from './components/AboutBenSpace.jsx'
+import CommunityStats from './components/CommunityStats.jsx'
 
 const nav = ['Home', 'Talk', 'Read', 'You']
 const navIcons = [
@@ -278,6 +280,7 @@ function Access({ onEnter }) {
                   : 'Enter BenSpace'}
         </button>
       </form>
+      <CommunityStats />
     </section>
   )
 }
@@ -472,11 +475,39 @@ async function enter(profile) {
 
   const articleList = (items, from) => <div className="article-grid">{items.map(item => <button className="card read-card" key={item.title} onClick={() => openArticle(item, from)}><span className="badge">{item.topic} · 1 min</span><strong>{item.title}</strong><span>{item.summary}</span></button>)}</div>
   return <div className={light ? 'shell light' : 'shell'}>
-    <header><div className="bar">
-      <div className="brand"><img src={import.meta.env.BASE_URL + 'brand.png'} alt="" /><strong>BenSpace</strong></div>
-      <div className="header-actions"><button aria-label={light ? 'Switch to Night Calm' : 'Switch to Ocean Breeze'} title={light ? 'Night Calm' : 'Ocean Breeze'} onClick={() => {setLight(!light); savePreference('benspace-theme', light ? 'dark' : 'light')}}>{light ? '☾' : '☼'}</button>
-      <button className="urgent" onClick={() => {if (screen !== 'Urgent') setPrevious(screen); go('Urgent')}}>♡ Urgent help</button></div>
-    </div></header>
+    <header>
+  <div className="bar">
+    <div className="brand">
+      <img src={import.meta.env.BASE_URL + 'brand.png'} alt="" />
+      <strong>BenSpace</strong>
+    </div>
+
+    <div className="header-actions">
+      <AboutBenSpace />
+
+      <button
+        aria-label={light ? 'Switch to Night Calm' : 'Switch to Ocean Breeze'}
+        title={light ? 'Night Calm' : 'Ocean Breeze'}
+        onClick={() => {
+          setLight(!light)
+          savePreference('benspace-theme', light ? 'dark' : 'light')
+        }}
+      >
+        {light ? '☾' : '☼'}
+      </button>
+
+      <button
+        className="urgent"
+        onClick={() => {
+          if (screen !== 'Urgent') setPrevious(screen)
+          go('Urgent')
+        }}
+      >
+        ♡ Urgent help
+      </button>
+    </div>
+  </div>
+</header>
     <main ref={main} tabIndex={-1}>
       <p className="demo-banner">BenSpace demo · Use sample details only{active && <button className="quiet" onClick={signOut}>Sign out</button>}</p>
       {apiError && <p role="alert">{apiError}</p>}

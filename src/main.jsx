@@ -115,7 +115,7 @@ function Access({ onEnter }) {
         alt=""
       />
 
-      <h1>A calm space for every Bennett student.</h1>
+      <h1>A calm space for every University student.</h1>
       <p>Sign up with your college ID to explore the BenSpace demo.</p>
 
       <div className="choices" aria-label="Account action">
